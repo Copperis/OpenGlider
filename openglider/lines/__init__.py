@@ -39,9 +39,22 @@ class LineSet():
     """
 
     def __init__(self, lines=None, v_inf=None):
-        self.v_inf = numpy.array(v_inf) if v_inf is not None else numpy.array([0, 0, 0])  # Parameters
         self.lines = lines or []
+        self._v_inf=None
+        self.v_inf = v_inf
         self.mat = None
+
+    @property
+    def v_inf(self):
+        return self._v_inf
+
+    @v_inf.setter
+    def v_inf(self, vinf):
+        if vinf is None:
+            vinf = [0, 0, 0]
+        self._v_inf = numpy.array(vinf)
+        for line in self.lines:
+            line.v_inf = vinf
 
     @property
     def lowest_lines(self):
@@ -54,11 +67,6 @@ class LineSet():
             nodes.add(line.upper_node)
             nodes.add(line.lower_node)
         return nodes
-
-    # def calc_stretch(self):
-    #     for line in self.lines:
-    #         pass
-    #     pass
 
     def calc_geo(self, start=None):
         if start is None:
@@ -76,7 +84,7 @@ class LineSet():
         if start is None:
             start = self.lowest_lines
         # 0 every line calculates its parameters
-        self.mat = SagMatrix(len(self.lines))
+        self.mat = SagMatrix(self.lines)
         self.calc_projected_nodes()
         self.calc_forces(start)
         for line in start:
@@ -84,7 +92,7 @@ class LineSet():
         # print(self.mat)
         self.mat.solve_system()
         for l in self.lines:
-            l.sag_par_1, l.sag_par_2 = self.mat.get_sag_parameters(l.number)
+            l.sag_par_1, l.sag_par_2 = self.mat.get_sag_parameters(l)
 
     # -----CALCULATE SAG-----#
     def calc_matrix_entries(self, line):
@@ -170,6 +178,12 @@ class LineSet():
         self.lines.sort(key=lambda line: line.number)
         # self.nodes.sort(key=lambda node: node.number)
         # TODO: Check for consistency
+
+    def get_cwA(self):
+        cwa = 0
+        for line in self.lines:
+            cwa += line.cwA()
+        return cwa
 
     def copy(self):
         return copy.deepcopy(self)

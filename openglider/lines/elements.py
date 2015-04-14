@@ -30,8 +30,9 @@ from openglider.vector.functions import norm, normalize
 
 
 class SagMatrix():
-    def __init__(self, number_of_lines):
-        size = number_of_lines * 2
+    def __init__(self, lines):
+        size = len(lines)*2
+        self.line_index = {line: i for i, line in enumerate(lines)}
         self.matrix = numpy.zeros([size, size])
         self.rhs = numpy.zeros(size)
         self.solution = numpy.zeros(size)
@@ -43,15 +44,15 @@ class SagMatrix():
         """
         fixed lower node
         """
-        i = line.number
+        i = self.line_index[line]
         self.matrix[2 * i + 1, 2 * i + 1] = 1.
 
     def insert_type_1_lower(self, line, lower_line):
         """
         free lower node
         """
-        i = line.number
-        j = lower_line.number
+        i = self.line_index[line]
+        j = self.line_index[lower_line]
         self.matrix[2 * i + 1, 2 * i + 1] = 1.
         self.matrix[2 * i + 1, 2 * j + 1] = -1.
         self.matrix[2 * i + 1, 2 * j] = -lower_line.length_projected
@@ -62,7 +63,7 @@ class SagMatrix():
         """
         free upper node
         """
-        i = line.number
+        i = self.line_index[line]
         self.matrix[2 * i, 2 * i] = 1
         infl_list = []
         vec = line.diff_vector_projected
@@ -71,7 +72,7 @@ class SagMatrix():
             infl_list.append(infl)
         sum_infl = sum(infl_list)
         for k in range(len(upper_lines)):
-            j = upper_lines[k].number
+            j = self.line_index[upper_lines[k]]
             self.matrix[2 * i, 2 * j] = -(infl_list[k] / sum_infl)
         self.rhs[2 * i] = line.ortho_pressure * \
             line.length_projected / line.force_projected
@@ -80,16 +81,17 @@ class SagMatrix():
         """
         Fixed upper node
         """
-        i = line.number
-        self.matrix[2 * line.number, 2 * line.number] = line.length_projected
-        self.matrix[2 * line.number, 2 * line.number + 1] = 1.
+        i = self.line_index[line]
+        self.matrix[2 * i, 2 * i] = line.length_projected
+        self.matrix[2 * i, 2 * i + 1] = 1.
         self.rhs[2 * i] = line.ortho_pressure * \
             line.length_projected ** 2 / line.force_projected / 2
 
     def solve_system(self):
         self.solution = numpy.linalg.solve(self.matrix, self.rhs)
 
-    def get_sag_parameters(self, line_nr):
+    def get_sag_parameters(self, line):
+        line_nr = self.line_index[line]
         return [
             self.solution[line_nr * 2],
             self.solution[line_nr * 2 + 1]]
@@ -97,11 +99,10 @@ class SagMatrix():
 
 class Line(CachedObject):
     def __init__(self, lower_node, upper_node, vinf,
-                 line_type=line_types.LineType.get('default'), target_length=None, number=None):
+                 line_type=line_types.LineType.get('default'), target_length=None):
         """
         Line Class
         """
-        self.number = number
         self.type = line_type  # type of line
 
         self.v_inf = vinf
@@ -164,6 +165,12 @@ class Line(CachedObject):
     def drag_total(self):
         return self.ortho_pressure * self.length_projected
 
+    def cwA(self):
+        """
+        cw * Area
+        """
+        return self.type.thickness * self.length_projected #self.type.cw *
+
     @cached_property('force', 'lower_node.vec', 'upper_node.vec')
     def force_projected(self):
         return self.force * self.length_projected / self.length_no_sag
@@ -204,7 +211,6 @@ class Line(CachedObject):
         else:
             v_inf = list(self.v_inf)
         return{
-            'number': self.number,
             'lower_node': self.lower_node,
             'upper_node': self.upper_node,
             'vinf': v_inf,
@@ -213,13 +219,12 @@ class Line(CachedObject):
         }
 
     @classmethod
-    def __from_json__(cls, number, lower_node, upper_node, vinf, line_type, target_length):
+    def __from_json__(cls, lower_node, upper_node, vinf, line_type, target_length, number=None):
         return cls(lower_node,
                    upper_node,
                    vinf,
                    line_types.LineType.get(line_type),
-                   target_length,
-                   number)
+                   target_length)
 
 
 class Node(object):

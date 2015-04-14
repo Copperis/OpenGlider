@@ -121,7 +121,7 @@ class LineSet2D(object):
             lower = line.lower_node.temp_node
             upper = line.upper_node.temp_node
             if lower and upper:
-                line = Line(number=line_no, lower_node=lower, upper_node=upper,
+                line = Line(lower_node=lower, upper_node=upper,
                             vinf=v_inf, target_length=line.target_length,
                             line_type=line.line_type)
                 lines.append(line)

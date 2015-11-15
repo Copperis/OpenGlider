@@ -79,6 +79,5 @@ setup(
     install_requires=requires,
     author='Booya',
     url='www.openglider.org',
-    download_url="https://github.com/hiaselhans/OpenGlider/archive/0.0.1.zip",
-    zip_save=false
+    download_url="https://github.com/hiaselhans/OpenGlider/tarball/0.0.1"
 )

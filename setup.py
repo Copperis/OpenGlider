@@ -78,5 +78,7 @@ setup(
     long_description=open('README.md').read(),
     install_requires=requires,
     author='Booya',
-    url='www.openglider.org'
+    url='www.openglider.org',
+    download_url="https://github.com/hiaselhans/OpenGlider/archive/0.0.1.zip",
+    zip_save=false
 )

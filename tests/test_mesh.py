@@ -10,7 +10,7 @@ import openglider
 
 class TestMesh(TestCase):
     def setUp(self, complete=True):
-        self.glider = openglider.load("./common/demokite.json").get_glider_3d()
+        self.glider = openglider.load(import_dir + '/demokite.ods').get_glider_3d()
 
     def test_mesh(self):
         p1 = Vertex(*[0, 0, 0])
